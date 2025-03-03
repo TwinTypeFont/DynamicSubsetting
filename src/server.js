@@ -189,7 +189,8 @@ window.onload = function() {
     }
 
     Promise.all(${JSON.stringify(validFonts)}.map(fontName =>
-        fetch("http://localhost:3000/api/fonts/subset", {
+        fetch("https://api-webfont.twintype.co/api/fonts/subset", {
+        
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ fontName, text: collectedText, site: "${site}" })
