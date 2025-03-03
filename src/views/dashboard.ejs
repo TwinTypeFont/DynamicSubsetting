@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>管理介面</title></head>
+<body>
+    <h2>網站授權管理</h2>
+    <form action="/dashboard/add-site" method="POST">
+        <input type="text" name="site_url" placeholder="輸入網站 URL" required>
+        <button type="submit">新增授權網站</button>
+    </form>
+
+    <h3>已授權網站</h3>
+    <ul>
+        <% allowedSites.forEach(site => { %>
+            <li><%= site.site_url %></li>
+        <% }) %>
+    </ul>
+
+    <h3>嵌入代碼</h3>
+    <% allowedSites.forEach(site => { %>
+    <pre>
+&lt;script src="https://your-server.com/embed.js?site=<%= site.site_url %>"&gt;&lt;/script&gt;
+    </pre>
+    <% }) %>
+</body>
+</html>

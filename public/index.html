@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字體子集化工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cactus+Classical+Serif&family=Noto+Sans+HK:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+        rel="stylesheet">
+    <style>
+        /* 原樣式 */
+        body {
+            font-family: "Noto Sans HK", serif;
+            font-optical-sizing: auto;
+            font-weight: 200;
+            font-style: normal;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .preview-text {
+            font-size: 24px;
+            line-height: 1.5;
+            min-height: 100px;
+            margin-bottom: 10px;
+        }
+
+        .result-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .noto-sans-hk-700 {
+            font-family: "Noto Sans HK", serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+        }
+        .noto-sans-hk-500 {
+            font-family: "Noto Sans HK", serif;
+            font-optical-sizing: auto;
+            font-weight: 500;
+            font-style: normal;
+        }
+        .noto-sans-hk-300 {
+            font-family: "Noto Sans HK", serif;
+            font-optical-sizing: auto;
+            font-weight: 300;
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="noto-sans-hk-700">字體子集化測試</h1>
+
+        <div class="form-group" style="font-weight: 200;">
+            <label for="fontSelect" class="noto-sans-hk-500">選擇字體</label>
+            <select id="fontSelect">
+                <option value="LXGWWenKaiMonoTC-Bold">霞鶩文楷</option>
+                <option value="CactusClassical">Cactus Classical Serif</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="inputText" class="noto-sans-hk-500">輸入文字</label>
+            <input type="text" id="inputText" placeholder="請輸入要測試的文字..." maxlength="15">
+            <input type="range" id="fontSizeSlider" min="10" max="100" value="16">
+        </div>
+
+        <div class="preview-container">
+            <div id="previewText" class="preview-text"></div>
+            <div id="result" class="result-info"></div>
+            <div id="error" class="error"></div>
+        </div>
+    </div>
+
+    <script>
+        const inputText = document.getElementById('inputText');
+        const previewText = document.getElementById('previewText');
+        const fontSelect = document.getElementById('fontSelect');
+        const result = document.getElementById('result');
+        const errorDisplay = document.getElementById('error');
+        const fontSizeSlider = document.getElementById('fontSizeSlider'); // 新增
+
+        let currentSubsetFont = null;
+        async function processSubset(text, fontName) {
+            try {
+                if (!text.trim()) return;
+
+                result.textContent = '處理中...';
+                errorDisplay.textContent = '';
+
+                const response = await fetch('/api/fonts/subset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fontName,
+                        text
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const fontFace = new FontFace(
+                        `SubsetFont-${Date.now()}`,
+                        `url(${data.subset.url})`
+                    );
+
+                    const font = await fontFace.load();
+
+                    if (currentSubsetFont) {
+                        document.fonts.delete(currentSubsetFont);
+                    }
+
+                    document.fonts.add(font);
+                    currentSubsetFont = font;
+
+                    previewText.style.fontFamily = font.family;
+                    result.textContent = `子集字體大小: ${(data.subset.size / 1024).toFixed(2)}KB, 字符數: ${data.subset.characters}`;
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                result.textContent = '';
+                errorDisplay.textContent = `錯誤: ${error.message}`;
+            }
+        }
+
+        // 防抖函數
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 更新預覽的防抖版本
+        const debouncedProcessSubset = debounce((text, fontName) => {
+            if (text.trim()) {
+                processSubset(text, fontName);
+            }
+        }, 300);
+
+        // 監聽輸入
+        inputText.addEventListener('input', (e) => {
+            const text = e.target.value;
+            previewText.textContent = text;
+
+            if (text.trim()) {
+                const fontName = fontSelect.value === 'LXGWWenKaiMonoTC-Bold'
+                    ? 'LXGWWenKaiMonoTC-Bold.ttf'
+                    : 'CactusClassicalSerif-Regular.ttf';
+                debouncedProcessSubset(text, fontName);
+            }
+        });
+
+        // 監聽字體選擇
+        fontSelect.addEventListener('change', (e) => {
+            const text = inputText.value;
+            if (text.trim()) {
+                const fontName = e.target.value === 'LXGWWenKaiMonoTC-Bold'
+                    ? 'LXGWWenKaiMonoTC-Bold.ttf'
+                    : 'CactusClassicalSerif-Regular.ttf';
+                processSubset(text, fontName);
+            }
+        });
+
+        // 字體大小滑桿控制
+        fontSizeSlider.addEventListener('input', function () {
+            previewText.style.fontSize = fontSizeSlider.value + 'px';
+        });
+
+        result.textContent = '請輸入文字開始測試';
+    </script>
+</body>
+
+</html>
