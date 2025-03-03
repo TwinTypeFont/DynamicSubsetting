@@ -126,7 +126,7 @@ app.post('/api/fonts/subset', async (req, res) => {
         // **如果已有相同的字體子集，直接返回**
         const existingFile = getExistingSubset(fontName, text);
         if (existingFile) {
-            return res.json({ success: true, subset: { url: `http://localhost:3000/temp-fonts/${existingFile}` } });
+            return res.json({ success: true, subset: { url: `https://api-webfont.twintype.co/temp-fonts/${existingFile}` } });
         }
 
         // **生成子集字體**
@@ -137,7 +137,7 @@ app.post('/api/fonts/subset', async (req, res) => {
         await createSubset(originalFontPath, outputPath, text);
         console.log(`子集化完成: ${outputPath}`);
 
-        res.json({ success: true, subset: { url: `http://localhost:3000/temp-fonts/${outputFileName}` } });
+        res.json({ success: true, subset: { url: `https://api-webfont.twintype.co/temp-fonts/${outputFileName}` } });
 
     } catch (error) {
         console.error("❌ 子集化失敗:", error);
