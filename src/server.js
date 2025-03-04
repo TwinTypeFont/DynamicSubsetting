@@ -162,7 +162,52 @@ app.get('/embed.js', (req, res) => {
     }
 
     const jsContent = `
-    eval(function(p,a,c,k,e,r){e=function(c){return c.toString(36)};if('0'.replace(0,e)==0){while(c--)r[e(c)]=k[c];k=[function(e){return r[e]||e}];e=function(){return'[1-9a-w]'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('window.onload=5(){2.3.1.a="hidden";5 e(){f 4="";2.querySelectorAll("3 *").g(5(b){6(b.h.i){b.h.g(5(7){6(7.nodeType===Node.TEXT_NODE&&7.4.j()){4+=7.4.j()+" "}})}});k[...new Set(4.split(\'\'))].join("")}f 8=e();6(!8||8.i===0){l.9("無法收集字符");2.3.1.a="m";k}Promise.all(${n.o(validFonts)}.map(c=>fetch("https://p-webfont.twintype.co/p/fonts/q",{method:"POST",headers:{"Content-Type":"application/r"},3:n.o({c,text:8,s:"${s}"})}).t(u=>u.r()).t(d=>{6(d.success){var 1=2.createElement("1");1.innerHTML="@v-face { v-family: \'"+c.replace(\'.ttf\',\'\')+"\'; src: w(\'"+d.q.w+"\') format(\'woff2\'); }";2.head.appendChild(1)}}).catch(9=>l.9("API 請求失敗:",9)))).finally(()=>2.3.1.a="m")};',[],33,'|style|document|body|textContent|function|if|node|collectedText|error|visibility|el|fontName|data|collectText|let|forEach|childNodes|length|trim|return|console|visible|JSON|stringify|api|subset|json|site|then|res|font|url'.split('|'),0,{}))`;
+window.onload = function() {
+    document.body.style.visibility = "hidden";
+
+    function collectText() {
+        let textContent = "";
+        document.querySelectorAll("body *").forEach(function(el) {
+            if (el.childNodes.length) {
+                el.childNodes.forEach(function(node) {
+                    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                        textContent += node.textContent.trim() + " ";
+                    }
+                });
+            }
+        });
+
+        return [...new Set(textContent.split(''))].join("");
+    }
+
+    let collectedText = collectText();
+    
+    if (!collectedText || collectedText.length === 0) {
+        console.error("無法收集字符");
+        document.body.style.visibility = "visible";
+        return;
+    }
+
+    Promise.all(${JSON.stringify(validFonts)}.map(fontName =>
+        fetch("https://api-webfont.twintype.co/api/fonts/subset", {
+        
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fontName, text: collectedText, site: "${site}" })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                var style = document.createElement("style");
+                style.innerHTML = "@font-face { font-family: '" + fontName.replace('.ttf', '') + "'; src: url('" + data.subset.url + "') format('woff2'); }";
+                document.head.appendChild(style);
+            }
+        })
+        .catch(error => console.error("API 請求失敗:", error))
+    )).finally(() => document.body.style.visibility = "visible");
+};
+
+`;
 
     res.setHeader('Content-Type', 'application/javascript');
     res.send(jsContent);
